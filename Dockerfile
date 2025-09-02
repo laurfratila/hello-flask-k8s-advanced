@@ -15,7 +15,7 @@ WORKDIR /app
 
 # Install deps from wheels only (no build tools kept)
 COPY --from=builder /wheels /wheels
-RUN pip install --no-cache-dir /wheels/* && rm -rf /wheels
+RUN pip install --no-cache-dir /wheels/*.whl && rm -rf /wheels
 
 # Copy app
 COPY . .
@@ -29,13 +29,9 @@ ENV PYTHONUNBUFFERED=1 \
 EXPOSE 8080
 
 # HEALTHCHECK calls /health
+COPY healthcheck.py /app/healthcheck.py
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD python -c "import os,sys,urllib.request; port=os.getenv('PORT','8080'); url=f'http://127.0.0.1:{port}/health'; \
-try: \
-    with urllib.request.urlopen(url, timeout=2) as r: \
-        sys.exit(0 if r.status==200 else 1) \
-except Exception: \
-    sys.exit(1)"
+  CMD python /app/healthcheck.py
 
 # Drop privileges
 USER appuser
